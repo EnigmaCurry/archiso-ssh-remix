@@ -10,7 +10,8 @@ adds the following stuff:
  * Your personal SSH pubkeys burned into the iso image so you can
    login remotely.
  * Your personal WiFi passwords burned into the iso image, and
-   configures WiFi on boot.
+   configures WiFi on boot. (This is currently a bit flaky, wired
+   works fine)
  * avahi-daemon publishes the availability of a service called
    'archiso', this lets you scan for the machine on your network
    without having to know the IP address.
