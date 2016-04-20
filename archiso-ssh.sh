@@ -5,7 +5,7 @@
 #  - ssh server
 #  - authorized_keys
 #  - wpa_supplicant network info
-#  - auto wifi enable
+#  - auto wifi enable if wired fails
 #  - avahi daemon and broadcast IP address as an archiso machine
 
 set -e
@@ -70,9 +70,54 @@ output_iso=`abs_path $output_iso`
 
 iso_label=`basename $asset_dir`
 
-workdir=`mktemp -d`
+workdir=$asset_dir/.tmpbuild
+exe sudo rm -rf $workdir
+exe mkdir $workdir
 exe cd $workdir
 exe 7z x $input_iso
+
+set +e
+read -r -d '' auto_wifi_script << 'EOF'
+#!/bin/bash
+if [ $(ip -4 route list 0/0 | wc -l) -eq 0 ]; then
+    # No network exists, find the first wifi nic and set it up:
+    wifi=$(iwconfig 2>&1 | grep -v "no wireless" | grep -v "^\W" | grep -E ".+" | awk '{ print $1 }' | head -n 1)
+    if [ ! -z "$wifi" ]; then
+        ln -s /root/wpa_supplicant.conf /etc/wpa_supplicant/wpa_supplicant-$wifi.conf
+        systemctl start wpa_supplicant@$wifi.service
+        systemctl start dhcpcd@$wifi.service
+    fi
+fi
+EOF
+
+read -r -d '' auto_wifi_service <<EOF
+[Unit]
+Description=Enable Wifi connections
+Wants=network-online.target
+After=dhcpcd@*
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/auto-wifi.sh
+
+[Install]
+WantedBy=multi-user.target
+EOF
+
+read -r -d '' archiso_avahi_service <<EOF
+[Unit]
+Description=Publish archiso network availability
+Wants=network-online.target
+
+[Service]
+Restart=always
+ExecStart=/usr/bin/avahi-publish -s "archiso" _archiso._tcp 22
+
+[Install]
+WantedBy=multi-user.target
+
+EOF
+set -e
 
 remaster_squashfs() {
     (
@@ -100,15 +145,29 @@ exe ln -s /usr/lib/systemd/system/sshd.service /etc/systemd/system/multi-user.ta
 exe mkdir -p /root/.ssh
 exe chmod 700 /root/.ssh
 
+# Avahi
+exe pacman --noconfirm -S avahi dbus
+exe ln -s /usr/lib/systemd/system/avahi-daemon.service /etc/systemd/system/multi-user.target.wants/avahi-daemon.service
+exe ln -s /usr/lib/systemd/system/dbus.service /etc/systemd/system/multi-user.target.wants/dbus.service
+
 LANG=C exe pacman -Sl | awk '/\[installed\]$/ {print $1 "/" $2 "-" $3}' > /pkglist.txt
 exe pacman -Scc --noconfirm
 EOF
 	exe cp squashfs-root/pkglist.txt ../pkglist.$arch.txt
+	# Copy authorized_keys
 	exe sudo cp $asset_dir/authorized_keys squashfs-root/root/.ssh/authorized_keys
-	exe sudo chown 600 squashfs-root/root/.ssh/authorized_keys
+	exe sudo chmod 600 squashfs-root/root/.ssh/authorized_keys
+	# Copy wpa_supplicant config
 	exe sudo cp $asset_dir/wpa_supplicant.conf squashfs-root/root/wpa_supplicant.conf
-	exe sudo chown 600 squashfs-root/root/wpa_supplicant.conf
-	exe rm airootfs.sfs
+	exe sudo chmod 600 squashfs-root/root/wpa_supplicant.conf
+	# Copy auto-wifi script
+	echo "$auto_wifi_script" | sudo tee squashfs-root/usr/bin/auto-wifi.sh > /dev/null
+	echo "$auto_wifi_service" | sudo tee squashfs-root/etc/systemd/system/multi-user.target.wants/auto-wifi.service > /dev/null
+	exe sudo chmod a+x squashfs-root/usr/bin/auto-wifi.sh
+	# Copy avahi publish service:
+	echo "$archiso_avahi_service" | sudo tee squashfs-root/etc/systemd/system/multi-user.target.wants/archiso-avahi.service > /dev/null
+
+	exe sudo rm airootfs.sfs
 	exe sudo mksquashfs squashfs-root airootfs.sfs
 	exe sudo rm -rf squashfs-root
     )
@@ -126,7 +185,7 @@ echo "default archiso-x86_64" >> $workdir/arch/boot/syslinux/archiso_head.cfg
 # Create new iso:
 exe genisoimage -l -r -J -V $iso_label -b isolinux/isolinux.bin -no-emul-boot -boot-load-size 4 -boot-info-table -c isolinux/boot.cat -o $output_iso .
 # Remove work directory:
-exe rm -rf $workdir
+exe sudo rm -rf $workdir
 # Hybridize it so we can boot from usb:
 exe isohybrid $output_iso
 echo "iso remastering complete: $output_iso"
