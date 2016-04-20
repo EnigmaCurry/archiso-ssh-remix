@@ -1,11 +1,11 @@
 #!/bin/bash
 
 # Remaster arch iso to have the following:
-#  - 0s bootloader timeout
+#  - 5s bootloader timeout
 #  - ssh server
 #  - authorized_keys
 #  - wpa_supplicant network info
-#  - auto wifi enable if wired fails
+#  - auto wifi enable 
 #  - avahi daemon and broadcast IP address as an archiso machine
 
 set -e
@@ -179,8 +179,8 @@ remaster_squashfs "i686"
 # Modify iso label:
 exe perl -pi -e "s/archisolabel=ARCH_[0-9]*/archisolabel=$iso_label/" $workdir/loader/entries/archiso-x86_64.conf $workdir/arch/boot/syslinux/archiso_sys32.cfg $workdir/arch/boot/syslinux/archiso_sys64.cfg
 # Auto-timeout for bootloader, original has none:
-echo "timeout 1" >> $workdir/arch/boot/syslinux/archiso_head.cfg
-echo "default archiso-x86_64" >> $workdir/arch/boot/syslinux/archiso_head.cfg
+#echo "default archiso-x86_64" >> $workdir/arch/boot/syslinux/archiso_head.cfg
+echo "timeout 50" >> $workdir/arch/boot/syslinux/archiso_head.cfg
 
 # Create new iso:
 exe genisoimage -l -r -J -V $iso_label -b isolinux/isolinux.bin -no-emul-boot -boot-load-size 4 -boot-info-table -c isolinux/boot.cat -o $output_iso .
