@@ -39,10 +39,14 @@ In the archiso-ssh-remix directory you will find the `build-iso.sh`
 script as well as a directory called `demo`. Taking a look inside the
 `demo` directory first you will find two asset files:
 
- * authorized_keys - This is the file that should contain all your SSH
-   public keys that should be allowed to connect to the archiso host.
- * wpa_supplicant.conf - This is the file that should contain all your
-   WiFi SSID and password information.
+ * `authorized_keys` - This is the file that should contain all your
+   SSH public keys that will be allowed to connect to the archiso
+   host. The key you want to copy to this file is usually contained in
+   `~/.ssh/id_rsa.pub`
+ * `wpa_supplicant.conf` - This is the file that should contain all
+   your WiFi SSID and password information. There are some examples in
+   the demo version of this file, but also check out `man
+   wpa_supplicant.conf`
    
 The demo directory is just that, a demo. You should create your own
 directory (call it whatever you like) with your own configuration
