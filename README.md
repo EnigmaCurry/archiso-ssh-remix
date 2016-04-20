@@ -1,16 +1,16 @@
 archiso-ssh-remix
 =================
 
-This is a tool to remaster the Arch Linux installation iso. It adds
-the following stuff:
+This is a tool to remaster the Arch Linux installation ISO image. It
+adds the following stuff:
 
  * 5s bootloader timeout to boot unattended without having to
    press Enter.
  * OpenSSH installed and sshd service started on boot.
- * Your personal SSH pubkeys added to /root/.ssh/authorized_keys so
-   you can login remotely.
- * wpa_supplicant config file for your own Wifi networks, and
-   configure WiFi on boot.
+ * Your personal SSH pubkeys burned into the iso image so you can
+   login remotely.
+ * Your personal WiFi passwords burned into the iso image, and
+   configures WiFi on boot.
  * avahi-daemon publishes the availability of a service called
    'archiso', this lets you scan for the machine on your network
    without having to know the IP address.
