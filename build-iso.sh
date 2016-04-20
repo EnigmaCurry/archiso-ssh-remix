@@ -79,22 +79,18 @@ exe 7z x $input_iso
 set +e
 read -r -d '' auto_wifi_script << 'EOF'
 #!/bin/bash
-if [ $(ip -4 route list 0/0 | wc -l) -eq 0 ]; then
-    # No network exists, find the first wifi nic and set it up:
-    wifi=$(iwconfig 2>&1 | grep -v "no wireless" | grep -v "^\W" | grep -E ".+" | awk '{ print $1 }' | head -n 1)
-    if [ ! -z "$wifi" ]; then
-        ln -s /root/wpa_supplicant.conf /etc/wpa_supplicant/wpa_supplicant-$wifi.conf
-        systemctl start wpa_supplicant@$wifi.service
-        systemctl start dhcpcd@$wifi.service
-    fi
+wifi=$(iwconfig 2>&1 | grep -v "no wireless" | grep -v "^\W" | grep -E ".+" | awk '{ print $1 }' | head -n 1)
+if [ ! -z "$wifi" ]; then
+    ln -s /root/wpa_supplicant.conf /etc/wpa_supplicant/wpa_supplicant-$wifi.conf
+    systemctl start wpa_supplicant@$wifi.service
+    systemctl start dhcpcd@$wifi.service
 fi
 EOF
 
 read -r -d '' auto_wifi_service <<EOF
 [Unit]
 Description=Enable Wifi connections
-Wants=network-online.target
-After=dhcpcd@*
+After=network.target
 
 [Service]
 Type=oneshot
