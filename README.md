@@ -56,3 +56,34 @@ Replace the `-i` parameter with the path to the original Arch Linux
 installer iso file. Replace the `-o` parameter with whatever you want
 to call your new iso image. Replace `demo` with the name of the
 directory you created.
+
+
+Using the ISO
+-------------
+
+To transfer the ISO image to a USB drive (eg. /dev/sdb) (Careful, make
+sure you use the right device name as this will wipe the drive!):
+
+    sudo dd if=your-remastered.iso of=/dev/sdb bs=100M
+	
+Before you boot up the computer with the USB drive, run the `scan.sh`
+tool on another computer in your same network. It won't output
+anything at first, but once the machine you're installing on is
+finished booting, you should see the IP address printed out. This is
+useful since the Arch iso gets an IP address via DHCP and you wouldn't
+otherwise know what address to connect to.
+
+`scan.sh` requires avahi-daemon, so if you don't have that yet install it:
+
+    pacman -S avahi-daemon dbus
+	systemctl enable avahi
+	systemctl enable dbus
+	systemctl start dbus
+	systemctl start avahi
+
+Once the machine is booted, and you know it's IP address, login:
+
+    ssh root@ip_address
+	
+You should be able to login without any password assuming you have the
+same SSH key setup as you burned into the iso image.
