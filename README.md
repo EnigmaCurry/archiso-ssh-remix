@@ -85,9 +85,27 @@ otherwise know what address to connect to.
 	systemctl start dbus
 	systemctl start avahi
 
-Once the machine is booted, and you know it's IP address, login:
+Once the machine is booted, and you know it's IP address, you can ssh
+to it. The server's SSH keys change everytime the iso boots, so it
+doesn't make any sense to store the keys, the following ssh command
+will disable it for the session:
 
-    ssh root@ip_address
-	
+    ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null root@ip_address
+
+Alternatively, depending on how your LAN DNS is setup, you may find
+that the name `archiso` automatically resolves to the machine as it
+boots up. If that's the case, you don't need the scan tool (although
+still useful to tell when it's up), and you could put the following
+into your `~/.ssh/config`:
+
+    Host archiso
+	  User root
+      StrictHostKeyChecking no
+      UserKnownHostsFile=/dev/null
+
+Then all that would be necessary is to run:
+
+    ssh archiso
+
 You should be able to login without any password assuming you have the
-same SSH key setup as you burned into the iso image.
+same SSH key setup locally as you have burned into the iso image.
